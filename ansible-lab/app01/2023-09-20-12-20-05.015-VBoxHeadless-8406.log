@@ -1,0 +1,12 @@
+Log created: 2023-09-20T12:20:05.153031000Z
+Process ID:  8406 (0x20d6)
+Parent PID:  2432 (0x980)
+Executable:  /usr/lib/virtualbox/VBoxHeadless
+Arg[0]: /usr/lib/virtualbox/VBoxHeadless
+Arg[1]: --comment
+Arg[2]: app01_default_1693779688634_55481
+Arg[3]: --startvm
+Arg[4]: 44fff9d3-92ee-48af-a77f-87b37494d916
+Arg[5]: --vrde
+Arg[6]: config
+AddRef: illegal refcnt=3221225469 state=2

@@ -1,0 +1,107 @@
+---
+- name: configurar servidor de aplicação java
+  hosts: app01
+
+  user: vagrant
+  become: yes
+
+  vars: 
+    - dbhost: "db01"
+    - dbname: "notes"
+    - dbusername: "notesapp"
+    - dbpassword: "devopsmaonamassa"
+  tasks:
+    - name: configurar hosts lab Ansible
+      lineinfile: 
+        dest: /etc/hosts
+        state: present
+        line: "{{item}}"
+      with_items: 
+        - 192.168.56.2 control-node
+        - 192.168.56.3 app01
+        - 192.168.56.4 db01
+    - name: adicionar usuário de app
+      user:
+        name: app
+        comment: Usuario de aplicacao
+        uid: 500
+
+    - name: instalação do java 11
+      yum:
+        name: java-11-openjdk-11.0.20.0.8-1.el7_9.x86_64
+        state: present
+      become: yes
+
+    - name: Set JAVA_HOME in .bashrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: "export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.20.0.8-1.el7_9.x86_64"
+      when: not ansible_env.HOME is defined or not (ansible_env.HOME + '/.bashrc') | to_nice_yaml | regex_search('export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.20.0.8-1.el7_9.x86_64') | bool
+
+
+    - name: Download Apache Maven 3.9.4
+      get_url:
+        url: "https://archive.apache.org/dist/maven/maven-3/3.9.4/binaries/apache-maven-3.9.4-bin.tar.gz"
+        dest: "/tmp/apache-maven-3.9.4-bin.tar.gz"
+        mode: '0644'
+
+    - name: Extract Apache Maven 3.9.4
+      ansible.builtin.unarchive:
+        src: "/tmp/apache-maven-3.9.4-bin.tar.gz"
+        dest: "/opt"
+        remote_src: yes
+
+    - name: Set MAVEN_HOME for Apache Maven 3.9.4
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: "export MAVEN_HOME=/opt/apache-maven-3.9.4"
+      when: not ansible_env.HOME is defined or not (ansible_env.HOME + '/.bashrc') | to_nice_yaml | regex_search('export MAVEN_HOME=/opt/apache-maven-3.9.4') | bool
+
+    - name: criação do diretorio de app
+      file: 
+        path: /opt/notes
+        state: directory
+        owner: app
+        group: app
+    - name: instalação do client
+      yum:
+        name: git
+        state: latest
+    - name: clone do respositorio notes - app
+      git:
+        repo: 'https://github.com/callicoder/spring-boot-mysql-rest-api-tutorial'
+        dest: /opt/notes
+        clone: yes
+        force: yes
+    - name: configurar arquivo de propriedades para camada de banco de dados
+      template:
+        src: application.properties
+        dest: /opt/notes/src/main/resources/application.properties
+    - name: Gerar pacote da aplicacao
+      command: mvn -f /opt/notes/ package -DskipTests
+      become_user: app
+    - name: Registrar versão atual do pacote
+      shell:
+        cmd: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['
+        chdir: /opt/notes/
+      register: app_version
+    - name: configurar serviço do systemd
+      template:
+        src: etc/systemd/system/notes.service
+        dest: /etc/systemd/system/notes.service
+      notify: reload daemon
+    - name: iniciar o serviço notes
+      service:
+        name: notes
+        state: restarted
+  roles:
+    - configuracao-default-so
+  handlers:
+    - name: reload app
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: 'notes'
+    - name: reload daemon
+      systemd:
+        daemon_reexec: yes
