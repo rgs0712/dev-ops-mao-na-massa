@@ -1,0 +1,11 @@
+buildImage
+    docker build -t <imageName> .
+Create network
+    docker network create <netWorkName>
+list netWorks
+    docker network ls
+run image with network
+    docker run --net <netWorkName> -p <localPort>:<portFromDockerImage> --name <image-name> -d <image>
+
+run with Volume
+    docker run -v <volumeLocal>:<volumeOnDockerImage>
