@@ -8,4 +8,4 @@ run image with network
     docker run --net <netWorkName> -p <localPort>:<portFromDockerImage> --name <image-name> -d <image>
 
 run with Volume
-    docker run -v <volumeLocal>:<volumeOnDockerImage>
+    docker run -v ${PWD}:<volumeLocal>:<volumeOnDockerImage>
