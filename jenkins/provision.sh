@@ -23,7 +23,7 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.28.1/docker
 sudo chmod -R 775 /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
-sudo systemctl restart docker
+sudo systemctl restart dockersudo
 
 sudo usermod -aG docker jenkins
 
